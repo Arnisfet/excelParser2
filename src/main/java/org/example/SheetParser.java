@@ -100,42 +100,67 @@ public class SheetParser {
 
     void matrixCreation(Worksheet sheet) {
         try {
-            // We need to work with the cells of the sheet starting from DataWorkRowY and DataWorkColumnX
             Cells cells = sheet.getCells();
-
             List<Map<Integer, String>> matrix = new ArrayList<>();
 
-            // Loop over the rows starting from DataWorkRowY
-            for (int row = DataWorkRowY; row <= cells.getMaxDataRow(); row++) {
+            int maxCol = cells.getMaxDataColumn();
+            int maxRow = cells.getMaxDataRow();
+
+            for (int row = DataWorkRowY; row <= maxRow; row++) {
+                boolean isRowEmpty = true;
                 Map<Integer, String> rowMap = new HashMap<>();
 
-                // Loop over the columns starting from DataWorkColumnX
-                for (int col = DataWorkColumnX; col <= cells.getMaxDataColumn(); col++) {
-                    // Get the cell value
+                for (int col = DataWorkColumnX; col <= maxCol; col++) {
                     Cell cell = cells.get(row, col);
                     String cellValue = cell.getStringValue().trim();
 
-                    // Get the corresponding header from parsedDocumentMap
-                    if (!cellValue.isEmpty())
+                    if (!cellValue.isEmpty()) {
                         rowMap.put(col, cellValue);
+                        isRowEmpty = false;
+                    }
                 }
-
-                // Add rowMap to the matrix
+                if (isRowEmpty) {
+                    break;
+                }
                 matrix.add(rowMap);
             }
-
-            // Output the created matrix for verification
             System.out.println("Matrix created with " + matrix.size() + " rows.");
-//            for (Map<Integer, String> rowMap : matrix) {
-//                for (Map.Entry<Integer, String> entry : rowMap.entrySet()) {
-//                    System.out.print(entry.getKey() + ": " + entry.getValue() + " | ");
-//                }
-//                System.out.println();
-//            }
-            System.out.println();
-
+            save(matrix);
         } catch (Exception e) {
             throw new RuntimeException("Error while creating matrix", e);
+        }
+    }
+
+
+
+    public void save(List<Map<Integer, String>> matrix) {
+        try {
+            Worksheet worksheet = header.getWorksheets().get(0);
+            Cells cells = worksheet.getCells();
+
+            int startRow = cells.getMaxDataRow() + 1;
+
+            for (int i = 0; i < matrix.size(); i++) {
+                Map<Integer, String> rowMap = matrix.get(i);
+                int currentRow = startRow + i;
+
+                resultMap.forEach((resultCol, sourceCol) -> {
+                    if (resultCol >= 0 && resultCol <= cells.getMaxDataColumn()) {
+                        String value = rowMap.get(sourceCol);
+                        if (value != null) {
+                            Cell cell = cells.get(currentRow, resultCol);
+                            cell.putValue(value);
+                        }
+                    } else {
+                        System.err.println("Invalid column index: " + resultCol);
+                    }
+                });
+            }
+
+            header.save("Updated_Header.xlsx");
+            System.out.println("Matrix saved to Updated_Header.xlsx successfully.");
+        } catch (Exception e) {
+            throw new RuntimeException("Error while saving the workbook", e);
         }
     }
 
@@ -245,14 +270,5 @@ public class SheetParser {
         return null; // No matching merged area found
     }
 
-    public void save() {
-        try {
-            Worksheet worksheet = header.getWorksheets().get(0);
-            Cells cells = worksheet.getCells();
 
-//
-        } catch (Exception e) {
-            throw new RuntimeException("Error while saving the workbook", e);
-        }
-    }
 }

@@ -29,7 +29,6 @@ public class Main {
         }
         parser.matchingRules();
         fileSet.forEach(parser::parse);
-        parser.save();
     }
 
     private static boolean isExcelFile(Path path) {
